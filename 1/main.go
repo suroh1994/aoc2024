@@ -28,5 +28,17 @@ func main() {
 		totalDist += int(math.Abs(float64(listA[idx] - listB[idx])))
 	}
 
-	fmt.Println(totalDist)
+	fmt.Printf("Part 1: %d\n", totalDist)
+	/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
+	appearanceMap := make(map[int]int)
+	for _, val := range listB {
+		appearanceMap[val] = appearanceMap[val] + 1
+	}
+
+	similarityScore := 0
+	for _, val := range listA {
+		similarityScore += val * appearanceMap[val]
+	}
+
+	fmt.Printf("Part 2: %d\n", similarityScore)
 }
