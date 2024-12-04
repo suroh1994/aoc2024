@@ -20,6 +20,15 @@ func ReadInputAsLines() []string {
 	return strings.Split(ReadInput(), "\r\n")
 }
 
+func ReadInputAsRuneMap() [][]rune {
+	lines := ReadInputAsLines()
+	runeMap := make([][]rune, len(lines))
+	for i, line := range lines {
+		runeMap[i] = []rune(line)
+	}
+	return runeMap
+}
+
 func ReadMultipleIntValuesPerLine(delimiter string) [][]int {
 	lines := ReadInputAsLines()
 	values := make([][]int, len(lines))
