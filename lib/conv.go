@@ -9,3 +9,11 @@ func MustParseToInt(str string) int {
 	}
 	return i
 }
+
+func RuneToInt(r rune) int {
+	return int(r) - 48
+}
+
+func IntToRune(i int) rune {
+	return rune(i + 48)
+}
