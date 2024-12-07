@@ -17,7 +17,12 @@ func ReadInput() string {
 }
 
 func ReadInputAsLines() []string {
-	return strings.Split(ReadInput(), "\r\n")
+	input := ReadInput()
+	separator := "\n"
+	if strings.Contains(input, "\r") {
+		separator = "\r\n"
+	}
+	return strings.Split(ReadInput(), separator)
 }
 
 func ReadInputAsRuneMap() [][]rune {
