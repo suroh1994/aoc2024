@@ -2,13 +2,12 @@ package main
 
 import (
 	"aoc2024/lib"
+	"errors"
 	"fmt"
 	"maps"
-	"os"
 )
 
 var (
-	debug      = true
 	directions = []lib.Point2D{
 		lib.NewPoint2D(-1, 0),
 		lib.NewPoint2D(0, 1),
@@ -17,12 +16,15 @@ var (
 	}
 )
 
+var (
+	ErrNotInMap = fmt.Errorf("not in map")
+)
+
 func main() {
 	guardMap := lib.ReadInputAsRuneMap()
 	convertDotsToZeros(guardMap)
 
-	startPos := determineStartPosition(guardMap)
-	currentPos := startPos
+	currentPos := determineStartPosition(guardMap)
 	currentDirection := 0
 
 	tilesVisited := 1
@@ -31,24 +33,15 @@ func main() {
 	guardMap[currentPos.X][currentPos.Y] = 1 << currentDirection
 	for {
 		// keep moving in the current direction
-		nextPos := currentPos.Add(directions[currentDirection])
-		if !lib.IsPosInBounds(guardMap, nextPos) {
-			// guard left the map, we're done
+		var err error
+		var nextPos lib.Point2D
+		nextPos, currentDirection, err = determineNextTile(guardMap, currentPos, currentDirection)
+		if errors.Is(err, ErrNotInMap) {
 			break
 		}
 
-		// can't move into walls, change direction and take another step
-		if guardMap[nextPos.X][nextPos.Y] == '#' {
-			currentDirection = (currentDirection + 1) % len(directions)
-			// we changed our direction, mark our current position with the new direction
-			guardMap[currentPos.X][currentPos.Y] |= 1 << currentDirection
-
-			// move in the new direction
-			nextPos = currentPos.Add(directions[currentDirection])
-			if !lib.IsPosInBounds(guardMap, nextPos) {
-				// guard left the map, we're done
-				break
-			}
+		if doesTrailLoop(guardMap, currentPos, nextPos, currentDirection) {
+			obstacleOptionSet[nextPos] = true
 		}
 
 		// store new position, now that we know it's safe
@@ -61,13 +54,6 @@ func main() {
 
 		// save the direction the guard was heading as it passed this point
 		guardMap[currentPos.X][currentPos.Y] |= 1 << currentDirection
-		visualizeMap(guardMap, currentPos)
-
-		// check whether an obstacle in front of us would result in a loop
-		obstaclePos := currentPos.Add(directions[currentDirection])
-		if doesTrailLoop(guardMap, currentPos, obstaclePos, currentDirection) {
-			obstacleOptionSet[obstaclePos] = true
-		}
 	}
 
 	fmt.Printf("Day 6 Part 1: %d\n", tilesVisited)
@@ -78,6 +64,31 @@ func main() {
 	}
 	fmt.Printf("Day 6 Part 2: %d\n", obstacleOptions)
 
+}
+
+func determineNextTile(walkableMap [][]rune, pos lib.Point2D, dir int) (lib.Point2D, int, error) {
+	// attempt to take a step in the current direction
+	nextPos := pos.Add(directions[dir])
+	if !lib.IsPosInBounds(walkableMap, nextPos) {
+		// guard left the map, we're done
+		return nextPos, -1, ErrNotInMap
+	}
+
+	// can't move into walls, change direction and attempt to take a step
+	for walkableMap[nextPos.X][nextPos.Y] == '#' {
+		dir = (dir + 1) % len(directions)
+		// we changed our direction, mark our current position with the new direction
+		walkableMap[pos.X][pos.Y] |= 1 << dir
+
+		// move in the new direction
+		nextPos = pos.Add(directions[dir])
+		if !lib.IsPosInBounds(walkableMap, nextPos) {
+			// guard left the map, we're done
+			break
+		}
+	}
+
+	return nextPos, dir, nil
 }
 
 // doesTrailLoop takes the original map, makes a copy of it and places an obstacle (#) at the given location.
@@ -110,27 +121,16 @@ func doesTrailLoop(guardMap [][]rune, startPos, obstaclePos lib.Point2D, startin
 	currentPos := startPos
 	currentDirection := startingDirection
 	for {
-		nextPos := currentPos.Add(directions[currentDirection])
-		if !lib.IsPosInBounds(trailMap, nextPos) {
+		var err error
+		var nextPos lib.Point2D
+		nextPos, currentDirection, err = determineNextTile(trailMap, currentPos, currentDirection)
+		if errors.Is(err, ErrNotInMap) {
 			return false
-		}
-
-		if trailMap[nextPos.X][nextPos.Y] == '#' {
-			currentDirection = (currentDirection + 1) % len(directions)
-			// we changed our direction, mark our current position with the new direction
-			trailMap[currentPos.X][currentPos.Y] |= 1 << currentDirection
-			// calculate the next position with the updated direction
-			nextPos = currentPos.Add(directions[currentDirection])
-
-			if !lib.IsPosInBounds(trailMap, nextPos) {
-				return false
-			}
 		}
 
 		currentPos = nextPos
 
 		if (trailMap[currentPos.X][currentPos.Y] & (1 << currentDirection)) != 0 {
-			visualizeMap(trailMap, startPos)
 			return true
 		}
 
@@ -157,44 +157,4 @@ func determineStartPosition(guardMap [][]rune) lib.Point2D {
 		}
 	}
 	panic("The guard was a lie!")
-}
-
-func visualizeMap(mapToVisualize [][]rune, currentPos lib.Point2D) {
-	if !debug {
-		return
-	}
-	visualization := ""
-	for x, row := range mapToVisualize {
-		for y, cell := range row {
-			if currentPos.X == x && currentPos.Y == y {
-				visualization += "O"
-				continue
-			}
-
-			if cell == '#' {
-				visualization += "#"
-				continue
-			}
-
-			hasPassedVertically := (cell & 5) != 0
-			hasPassedHorizontally := (cell & 10) != 0
-
-			symbol := "."
-			switch true {
-			case hasPassedVertically && hasPassedHorizontally:
-				symbol = "+"
-			case hasPassedVertically:
-				symbol = "|"
-			case hasPassedHorizontally:
-				symbol = "-"
-			}
-			visualization += symbol
-		}
-		visualization += "\n"
-	}
-
-	err := os.WriteFile("myMap", []byte(visualization), 0666)
-	if err != nil {
-		panic(err)
-	}
 }
