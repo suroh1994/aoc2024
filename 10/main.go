@@ -21,10 +21,12 @@ func main() {
 	zeroes := findAllZeroes(inputMap)
 
 	trails := 0
+	totalTrailRatings := 0
 	// for each zero
 	for _, zero := range zeroes {
 		//  find all tracks to 9s recursively
-		trailHeadsReached := findAllNines(inputMap, zero)
+		trailHeadsReached, rating := findAllNines(inputMap, zero)
+		totalTrailRatings += rating
 		// count all 9s reached
 		for range maps.Keys(trailHeadsReached) {
 			// add to total
@@ -33,6 +35,8 @@ func main() {
 	}
 
 	fmt.Printf("Part 1: %d\n", trails)
+	/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
+	fmt.Printf("Part 2: %d\n", totalTrailRatings)
 }
 
 func findAllZeroes(inputMap [][]rune) []lib.Point2D {
@@ -47,7 +51,8 @@ func findAllZeroes(inputMap [][]rune) []lib.Point2D {
 	return zeroes
 }
 
-func findAllNines(inputMap [][]rune, start lib.Point2D) map[lib.Point2D]bool {
+func findAllNines(inputMap [][]rune, start lib.Point2D) (map[lib.Point2D]bool, int) {
+	trailRating := 0
 	nines := make(map[lib.Point2D]bool)
 	for _, direction := range directions {
 		nextPos := start.Add(direction)
@@ -57,12 +62,13 @@ func findAllNines(inputMap [][]rune, start lib.Point2D) map[lib.Point2D]bool {
 
 		if inputMap[nextPos.X][nextPos.Y] == inputMap[start.X][start.Y]+1 {
 			ninesReached := findNinesRecursive(inputMap, nextPos)
+			trailRating += len(ninesReached)
 			for _, nine := range ninesReached {
 				nines[nine] = true
 			}
 		}
 	}
-	return nines
+	return nines, trailRating
 }
 
 func findNinesRecursive(inputMap [][]rune, pos lib.Point2D) []lib.Point2D {
