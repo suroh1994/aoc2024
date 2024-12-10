@@ -5,6 +5,17 @@ type Point2D struct {
 	Y int
 }
 
+var (
+	NORTH = Point2D{-1, 0}
+	UP    = NORTH
+	EAST  = Point2D{0, 1}
+	RIGHT = EAST
+	SOUTH = Point2D{1, 0}
+	DOWN  = SOUTH
+	WEST  = Point2D{0, -1}
+	LEFT  = WEST
+)
+
 func NewPoint2D(x, y int) Point2D {
 	return Point2D{
 		X: x,
