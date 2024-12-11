@@ -16,43 +16,50 @@ func main() {
 		numbers[idx] = lib.MustParseToInt(numberStrings[idx])
 	}
 
-	//printStones(numbers)
-
-	for i := 0; i < 25; i++ {
-		fmt.Printf("Iteration: %d\n", i+1)
-		ApplyRules(&numbers)
-		//printStones(numbers)
+	stoneCount := 0
+	for _, num := range numbers {
+		stoneCount += blinkAtStone(num, 25)
 	}
 
-	fmt.Printf("Part 1: %d\n", len(numbers))
+	fmt.Printf("Part 1: %d\n", stoneCount)
+	/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
+	stoneCount = 0
+	for _, num := range numbers {
+		stoneCount += blinkAtStone(num, 75)
+	}
+	fmt.Printf("Part 2: %d\n", stoneCount)
 }
 
 var (
-	cache = map[int][]int{
-		0: {1},
-	}
+	cache = map[lib.Point2D]int{}
 )
 
-func ApplyRules(numbers *[]int) {
-	for i := 0; i < len(*numbers); i++ {
-		switch true {
-		case (*numbers)[i] == 0:
-			(*numbers)[i] = 1
-		case lib.DigitsInNum((*numbers)[i])%2 == 0:
-			left := (*numbers)[i] / int(math.Pow(10, float64(lib.DigitsInNum((*numbers)[i])/2)))
-			right := (*numbers)[i] % int(math.Pow(10, float64(lib.DigitsInNum((*numbers)[i])/2)))
-			(*numbers)[i] = left
-			*numbers = append((*numbers)[:i+1], append([]int{right}, (*numbers)[i+1:]...)...)
-			i++
-		default:
-			(*numbers)[i] = (*numbers)[i] * 2024
-		}
+func blinkAtStone(stoneValue, blinksLeft int) int {
+	if stoneCount, exists := cache[lib.NewPoint2D(stoneValue, blinksLeft)]; exists {
+		return stoneCount
 	}
-}
 
-func printStones(numbers []int) {
-	for _, number := range numbers {
-		fmt.Printf("%d ", number)
+	if blinksLeft == 0 {
+		cache[lib.NewPoint2D(stoneValue, blinksLeft)] = 1
+		return 1
 	}
-	fmt.Println()
+
+	if stoneValue == 0 {
+		stoneCount := blinkAtStone(1, blinksLeft-1)
+		cache[lib.NewPoint2D(stoneValue, blinksLeft)] = stoneCount
+		return stoneCount
+	}
+
+	digitCount := lib.DigitsInNum(stoneValue)
+	if digitCount%2 == 0 {
+		left := stoneValue / int(math.Pow(10, float64(lib.DigitsInNum(stoneValue)/2)))
+		right := stoneValue % int(math.Pow(10, float64(lib.DigitsInNum(stoneValue)/2)))
+		stoneCount := blinkAtStone(left, blinksLeft-1) + blinkAtStone(right, blinksLeft-1)
+		cache[lib.NewPoint2D(stoneValue, blinksLeft)] = stoneCount
+		return stoneCount
+	}
+
+	stoneCount := blinkAtStone(stoneValue*2024, blinksLeft-1)
+	cache[lib.NewPoint2D(stoneValue, blinksLeft)] = stoneCount
+	return stoneCount
 }
