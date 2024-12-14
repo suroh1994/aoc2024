@@ -3,7 +3,12 @@ package main
 import (
 	"aoc2024/lib"
 	"fmt"
+	"image"
+	"image/png"
+	"log"
+	"os"
 	"regexp"
+	"strconv"
 )
 
 type guardInput struct {
@@ -60,26 +65,7 @@ func main() {
 		finalPositions = append(finalPositions, finalPosition)
 	}
 
-	/*
-		// prints the final positions
-		fmt.Println("~~~~~~~~~~~~")
-		for x := 0; x < mapSize.X; x++ {
-			for y := 0; y < mapSize.Y; y++ {
-				guardCount := 0
-				for _, finalPosition := range finalPositions {
-					if finalPosition.X == x && finalPosition.Y == y {
-						guardCount++
-					}
-				}
-				if guardCount == 0 {
-					fmt.Print(".")
-				} else {
-					fmt.Print(strconv.Itoa(guardCount))
-				}
-			}
-			fmt.Print("\n")
-		}
-	*/
+	//printPositions(finalPositions)
 
 	quadrantXSize := (mapSize.X - 1) / 2
 	quadrantYSize := (mapSize.Y - 1) / 2
@@ -108,4 +94,69 @@ func main() {
 		fmt.Printf("%d | %d\n", guardsInEachQuadrant[2], guardsInEachQuadrant[3])
 	*/
 	fmt.Printf("Part 1: %d\n", guardsInEachQuadrant[0]*guardsInEachQuadrant[1]*guardsInEachQuadrant[2]*guardsInEachQuadrant[3])
+
+	/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
+
+	for secondsPassed := 0; secondsPassed < 10000; secondsPassed++ {
+		finalPositions = make([]lib.Point2D, 0, len(guards))
+		for _, guard := range guards {
+			movement := lib.NewPoint2D(guard.movementVec.X*secondsPassed, guard.movementVec.Y*secondsPassed)
+			finalPosition := guard.startPos.Add(movement)
+			// modulo to get back into range and then add and modulo once more to turn negative values positive (no effect on positive values)
+			finalPosition.X = (finalPosition.X%mapSize.X + mapSize.X) % mapSize.X
+			finalPosition.Y = (finalPosition.Y%mapSize.Y + mapSize.Y) % mapSize.Y
+			finalPositions = append(finalPositions, finalPosition)
+		}
+		positionsToJpeg(finalPositions, secondsPassed)
+	}
+
+}
+
+func printPositions(positions []lib.Point2D) {
+	for x := 0; x < mapSize.X; x++ {
+		for y := 0; y < mapSize.Y; y++ {
+			guardCount := 0
+			for _, position := range positions {
+				if position.X == x && position.Y == y {
+					guardCount++
+				}
+			}
+			if guardCount == 0 {
+				fmt.Print(".")
+			} else {
+				fmt.Print(strconv.Itoa(guardCount))
+			}
+		}
+		fmt.Print("\n")
+	}
+}
+
+func positionsToJpeg(positions []lib.Point2D, id int) {
+	imageBytes := make([]uint8, mapSize.X*mapSize.Y)
+	for x := 0; x < mapSize.X; x++ {
+		for y := 0; y < mapSize.Y; y++ {
+			guardCount := 0
+			for _, position := range positions {
+				if position.X == x && position.Y == y {
+					guardCount++
+				}
+			}
+			if guardCount == 0 {
+				imageBytes[x*mapSize.Y+y] = 0
+			} else {
+				imageBytes[x*mapSize.Y+y] = 255
+			}
+		}
+	}
+
+	img := image.NewGray(image.Rect(0, 0, mapSize.X, mapSize.Y))
+	img.Pix = imageBytes
+
+	out, _ := os.Create(fmt.Sprintf("./images/img%d.png", id))
+	defer out.Close()
+
+	err := png.Encode(out, img)
+	if err != nil {
+		log.Println(err)
+	}
 }
