@@ -27,6 +27,10 @@ func ReadInputAsLines() []string {
 
 func ReadInputAsRuneMap() [][]rune {
 	lines := ReadInputAsLines()
+	return LinesToRuneMap(lines)
+}
+
+func LinesToRuneMap(lines []string) [][]rune {
 	runeMap := make([][]rune, len(lines))
 	for i, line := range lines {
 		runeMap[i] = []rune(line)
